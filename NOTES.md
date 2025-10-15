@@ -1,0 +1,1 @@
+Make sure .env has JWT_SECRET set. Use XAMPP/MySQL on Windows; create database myapp_db.
