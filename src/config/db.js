@@ -1,39 +1,46 @@
 // backend/src/config/db.js
 const { Sequelize } = require('sequelize');
 
-// Support both custom and Railway-provided variable names
-const MYSQL_DB =
-  process.env.MYSQL_DB || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE;
-const MYSQL_USER =
-  process.env.MYSQL_USER || process.env.MYSQLUSER || process.env.MYSQL_USERNAME;
-const MYSQL_PASS =
-  process.env.MYSQL_PASS || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD;
-const MYSQL_HOST =
-  process.env.MYSQL_HOST || process.env.MYSQLHOST;
-const MYSQL_PORT =
-  process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306;
-const DATABASE_URL =
-  process.env.DATABASE_URL || process.env.MYSQL_URL || process.env.MYSQL_PUBLIC_URL;
+// Load env vars
+const {
+  DATABASE_URL,
+  MYSQL_HOST,
+  MYSQL_PORT,
+  MYSQL_DB,
+  MYSQL_USER,
+  MYSQL_PASS,
+  NODE_ENV
+} = process.env;
 
 let sequelize;
 
+// ✅ Prefer full connection string if provided (Railway often gives DATABASE_URL)
 if (DATABASE_URL) {
-  console.log('✅ Using DATABASE_URL for MySQL connection');
+  console.log('✅ Using DATABASE_URL from environment');
   sequelize = new Sequelize(DATABASE_URL, {
     dialect: 'mysql',
     logging: false,
   });
 } else {
-  console.log('✅ Using individual MYSQL_* env vars:', {
-    MYSQL_HOST,
-    MYSQL_PORT,
-    MYSQL_DB,
-    MYSQL_USER,
+  // ✅ Use individual variables
+  const host = MYSQL_HOST || (NODE_ENV === 'production' ? null : '127.0.0.1');
+
+  if (!host) {
+    console.error('❌ No MYSQL_HOST or DATABASE_URL defined — cannot connect to DB.');
+    throw new Error('Missing DB configuration');
+  }
+
+  console.log('✅ Connecting to MySQL with:', {
+    host,
+    port: MYSQL_PORT || 3306,
+    database: MYSQL_DB,
+    user: MYSQL_USER,
+    environment: NODE_ENV || 'development'
   });
 
   sequelize = new Sequelize(MYSQL_DB, MYSQL_USER, MYSQL_PASS, {
-    host: MYSQL_HOST || '127.0.0.1',
-    port: MYSQL_PORT,
+    host,
+    port: MYSQL_PORT || 3306,
     dialect: 'mysql',
     logging: false,
   });
